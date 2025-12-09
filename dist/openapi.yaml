@@ -1,0 +1,1091 @@
+openapi: 3.0.3
+info:
+  title: Recipez Api
+  description: API for "grandmas recpies" project.
+  version: 1.0.0
+servers:
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/IdanDuhaviv/RecepieWebAPI/1.0.0
+tags:
+  - name: Auth
+    description: Authentication
+  - name: Recipes
+    description: Recipe management and operations
+  - name: Users
+    description: User management
+
+paths:
+  /Login:
+    post:
+      tags:
+        - Auth
+      summary: Log in an existing user
+      description: An existing user logs in to the system.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Login"
+      responses:
+        "200":
+          description: Login succeeded
+        "401":
+          description: Username or Password incorrect
+
+  /Register:
+    post:
+      tags:
+        - Auth
+      summary: Register a new user
+      description: Adds a new user to the server.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterReq"
+      responses:
+        "201":
+          description: User created successfully
+        "400":
+          description: Missing required fields
+        "409":
+          description: Username taken
+
+  /Logout:
+    post:
+      tags:
+        - Auth
+      summary: Log out a user
+      description: Logs the user out of the system and clears session.
+      responses:
+        "200":
+          description: Logout succeeded
+
+  /recipes/{recipeId}:
+    get:
+      tags:
+        - Recipes
+      summary: Return full details of a recipe
+      description: Returns JSON object with full details about the recipe.
+      parameters:
+        - name: recipeId
+          in: path
+          required: true
+          schema:
+            type: string
+            description: Recipe unique ID
+      responses:
+        "200":
+          description: Recipe full details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FullRecipe"
+        "404":
+          description: Recipe with the given ID does not exist
+          
+          
+  /recipes/Explore:
+    get:
+      tags:
+        - Recipes
+      summary: Get three random recipes
+      description: Fetches three random recipes, considering user preferences if logged in.
+      responses:
+        "200":
+          description: Three random recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/previewReceipe"
+        "404":
+          description: Recipes not found
+        "500":
+          description: Internal server error
+          
+
+  /recipes/Family:
+    get:
+      tags:
+        - Recipes
+      summary: Get all family recipes
+      description: Fetches all the family recipes for the logged-in user .
+      responses:
+        "200":
+          description: List of all family recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/previewFamilyRecipe"
+        "204":
+          description: we need atleast 3 recpies 
+        "401":
+          description: User not logged in
+
+  /recipes/Family/{recipeId}:
+    get:
+      tags:
+        - Recipes
+      summary: Get full details of a family recipe
+      description: Return all details of a family recipe identified by recipeId.
+      parameters:
+        - in: path
+          name: recipeId
+          required: true
+          schema:
+            type: string
+            description: Family recipe unique ID
+      responses:
+        "200":
+          description: Family recipe full details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FullFamilyRecipe"
+        "404":
+          description: Family recipe not found
+
+  /users/markwatched/{recipeId}:
+    post:
+      tags:
+        - Users
+      summary: Mark a recipe as watched
+      description: Marks the specified recipe as watched by the logged-in user.
+      parameters:
+        - in: path
+          name: recipeId
+          required: true
+          schema:
+            type: string
+            description: Recipe unique ID
+      responses:
+        "200":
+          description: Recipe marked as watched
+        "401":
+          description: User not logged in
+
+  /recipes/search:
+    get:
+      tags:
+        - Recipes
+      summary: Search for recipes 
+      description: Returns matching recipes. default to be returned is 5.
+      parameters:
+        - in: query
+          name: query
+          required: true
+          schema:
+            type: string
+            description: recipe search query.
+        - in: query
+          name: number
+          schema:
+            type: integer
+            default: 5
+            minimum: 5
+            enum: [5, 10, 15]
+            description: The number of expected results 5/10/15 (default is 5).
+
+        - in: query
+          name: cuisine
+          schema:
+            type: string
+            description: The cuisine(s) of the recipes.
+
+        - in: query
+          name: diet
+          schema:
+            type: string
+            description: The diet(s) for which the recipes must be suitable.
+
+        - in: query
+          name: intolerance
+          schema:
+            type: string
+            description: A comma-separated list of intolerances.
+      responses:
+        "200":
+          description: A list of the matching recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/previewReceipe"
+        "204":
+          description: There are no matching recipies
+        "400":
+          description: Query parameter is missing
+
+          
+  /recipes/{recipeId}/like:
+  post:
+    tags:
+      - Recipes
+    summary: Like a recipe
+    parameters:
+      - name: recipeId
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Like added
+      '400':
+        description: Bad request
+
+        
+  /users/favorites:
+    get:
+      tags:
+        - Users
+      summary: Return user's favorite recipes
+      description: Returns the favorite recipes saved by the user.
+      responses:
+        "200":
+          description: A list of all user's favorite recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/previewReceipe"
+        "401":
+          description: Unauthorized
+
+    post:
+      tags:
+        - Users
+      summary: Save a recipe in the user's favorites list
+      description: Adds the chosen recipe to the favorites list of the logged-in user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recipeId:
+                  type: integer
+                  description: The recipe's ID to save
+                  example: 111111
+      responses:
+        "200":
+          description: Recipe successfully addedto favorites list
+        "400":
+          description: Recipe does not exist
+        "401":
+          description: Unauthorized
+
+    delete:
+      tags:
+        - Users
+      summary: Remove a recipe from the user's favorites list
+      description: Removes the chosen recipe from the favorites list of the logged-in user. **NOT REQUIRED**
+      parameters:
+        - in: query
+          name: recipeId
+          required: true
+          schema:
+            type: integer
+            description: The recipe's ID to remove
+            example: 111111
+      responses:
+        "200":
+          description: Recipe successfully removed from favorites list
+        "401":
+          description: Unauthorized
+
+  /users/my_recipes:
+    get:
+      tags:
+        - Users
+      summary: Return user's recipes
+      description: Returns a JSON object containing details about all the  recipes of the  user.
+      responses:
+        "200":
+          description: List of all user's private recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PrivateRecipe"
+        "401":
+          description: Unauthorized
+    
+  
+    post:
+      tags:
+        - Users
+      summary: Add a new recipe to the user's private recipes
+      description: Adds to the user recpies list a new recpie 
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddFullPrivateRecipe"
+      responses:
+        "201":
+          description: The recipe was successfully created
+        "400":
+          description: Missing required parameters
+        "401":
+          description: Unauthorized
+
+  /users/my_recipes/{recipeId}:
+    get:
+      tags:
+        - Users
+      summary: Return full details of a private recipe
+      description: Returns a JSON object containing the full details about this recipe.
+      parameters:
+        - name: recipeId
+          in: path
+          required: true
+          schema:
+            type: string
+            description: Private recipe unique ID
+      responses:
+        "200":
+          description: Private recipe full details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FullPrivateRecipe"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Private recipe with the given ID does not exist
+
+
+  /users/lastWatchedRecipes:
+    get:
+      tags:
+        - Users
+      summary: Return the user's last 3 watched recipes
+      description: Returns  details about the last 3 watched recipes of the user.
+      responses:
+        "200":
+          description: Preview details of the last 3 watched recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/previewReceipe"
+        "401":
+          description: Unauthorized
+
+  
+  /users/lastSearch:
+    get:
+      tags:
+        - Users
+      summary: Return the user's last search results
+      description:
+        Returns a list of recpies from former search.
+        
+        still not sure about this, need to check again
+      responses:
+        "200":
+          description: User's last search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/previewReceipe"
+        "401":
+          description: Unauthorized
+          
+  /users/family:
+    post:
+      tags:
+        - Users
+      summary: Create a new family recipe
+      description: Adds a new family recipe to the user's collection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FamilyRecipeInput'
+      responses:
+        "201":
+          description: Family recipe created successfully
+        "401":
+          description: Unauthorized
+        "400":
+          description: Bad request
+  
+
+components:
+  schemas:
+    Login:
+      required:
+        - username
+        - password
+      type: object
+      description: Model containing login requirment
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 8
+          description: Username contains between 3 - 8 characters.
+          example: Tigal
+        password:
+          type: string
+          minLength: 5
+          maxLength: 10
+          format: password
+          description: >
+            Password contains between 5 to 10 characters,
+            at least one of them is a number and a special character.
+          example: Tigal@tim.com
+
+    RegisterReq:
+      required:
+        - userName
+        - firstName
+        - lastName
+        - country
+        - password
+        - passwordConfirmation
+        - email
+      type: object
+      description: Model containing user info
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 8
+          description: User's unique username is 3-8 characters, and only letters from the English alphabet
+          pattern: "^[a-zA-Z]{3,8}$"
+          example: Tigal
+        firstname:
+          type: string
+          example: Tim
+        lastname:
+          type: string
+          example: Johnson
+        country:
+          type: string
+          description: User's country, must be one of the country names from the external REST Countries API (https://restcountries.com/v3.1/all).
+          example: Israel
+        password:
+          type: string
+          minLength: 5
+          maxLength: 10
+          pattern: "^(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z0-9!@#$%^&*]{5,10}$"
+          format: password
+          description: >
+            Password contains between 5- 10 characters,
+            That contains atleast one number and one special character
+          example: Tim123!
+        passwordConfirmation:
+          type: string
+          minLength: 5
+          format: password
+          example: Tim123!
+        email:
+          type: string
+          format: email
+          example: amitdva@post.bgu.ac.il
+
+    previewReceipe:
+      type: object
+      description: Model containing recipe preview details
+      properties:
+        id:
+          type: integer
+          example: 111111
+        image:
+          type: string
+          format: uri
+          description: URL of the recipe's image.
+          example: https://assets.bonappetit.com/photos/5b9a901947aaaf7cd9ea90f4/master/w_1600,c_limit/ba-recipe-pasta-al-limone-1.jpg
+        title:
+          type: string
+          description: recipe name.
+          example: Pasta Limona
+        Time:
+          type: integer
+          description: time till meal is ready (minutes).
+          example: 42
+        popularity:
+          type: integer
+          description: Number of likes.
+          example: 1
+        vegan:
+          type: boolean
+          description: Indicates if it's a vegan recpie.
+          example: True
+        vegetarian:
+          type: boolean
+          description: Indicates if it's a vegetarian recpie.
+          example: False
+        glutenFree:
+          type: boolean
+          description: Indicates if its a gluten-free recpie.
+          example: False
+        intolerances:   #ADDED IDAN
+         type: array
+         items:
+          type: string
+          enum:
+            - Dairy
+            - Egg
+            - Gluten
+            - Grain
+            - Peanut
+            - Seafood
+            - Sesame
+            - Shellfish
+            - Soy
+            - Sulfite
+            - Tree Nut
+            - Wheat
+          description: List of intolerances for which the recipe may be problematic
+          example: [Gluten, Dairy]
+        isWatched:
+          type: boolean
+          description: True if user watched this recipe.
+          example: True
+        isFavorite:
+          type: boolean
+          description: True if user added this recipe to favorite list.
+          example: True
+
+    FullRecipe:
+      type: object
+      description: Model containing full recipe details
+      properties:
+        id:
+          type: integer
+          description: Recipe ID in Spoonacular.
+          example: 111111
+        image:
+          type: string
+          format: uri
+          description: URL of the recipe's image.
+          example: https://assets.bonappetit.com/photos/5b9a901947aaaf7cd9ea90f4/master/w_1600,c_limit/ba-recipe-pasta-al-limone-1.jpg
+        title:
+          type: string
+          example: Pasta Limona
+        Time:
+          type: integer
+          description: Time it takes to make the recipe (minutes).
+          example: 42
+        popularity:
+          type: integer
+          description: Number of likes.
+          example: 1
+        vegan:
+          type: boolean
+          description: Indicates for vegen recpie.
+          example: True
+        vegetarian:
+          type: boolean
+          description: Indicates for vegetarian recpie.
+          example: False
+        glutenFree:
+          type: boolean
+          description: Indicates for gluten-free recpie.
+          example: False
+        isWatched:
+          type: boolean
+          description: True if the user has already watched this recipe.
+          example: false
+        isFavorite:
+          type: boolean
+          description: True if user added this recipe to favorite list.
+          example: false
+        intolerances:   #ADDED IDAN
+         type: array
+         items:
+          type: string
+          enum:
+            - Dairy
+            - Egg
+            - Gluten
+            - Grain
+            - Peanut
+            - Seafood
+            - Sesame
+            - Shellfish
+            - Soy
+            - Sulfite
+            - Tree Nut
+            - Wheat
+          description: List of intolerances for which the recipe may be problematic
+          example: [Gluten, Dairy]
+        ingredients:
+          type: array
+          items:
+            type: object
+            properties:
+              amount:
+                type: number
+                description: Amount of ingridients.
+                example: 5
+              name:
+                type: string
+                description: Ingridiate name.
+                example: Pasta
+          description: List of ingredients with quantities.
+        instructions:
+          type: string
+          description: instructions for the recpie.
+          example: Put pasta in boiling water
+        servings:
+          type: integer
+          description: Number of servings.
+          example: 2
+
+    previewFamilyRecipe:
+      type: object
+      description: recipe basic preview details
+      properties:
+        id:
+          type: integer
+          description: Recipe ID in Spoonacular.
+          example: 111111
+        image:
+          type: string
+          format: uri
+          description: URL of the the meal or the family family member with it
+          example: https://assets.bonappetit.com/photos/5b9a901947aaaf7cd9ea90f4/master/w_1600,c_limit/ba-recipe-pasta-al-limone-1.jpg
+        title:
+          type: string
+          description: Name of the recipe.
+          example: KFC and Watermelon
+        Time:
+          type: integer
+          description: Time it takes to make the recipe (Minutes)
+          example: 420
+        popularity:
+          type: integer
+          description: Number of likes.
+          example: 42
+        vegan:
+          type: boolean
+          description: Indicates for Vegen recpie.
+          example: false
+        vegetarian:
+          type: boolean
+          description: Indicates for vegetarian recpie.
+          example: false
+        glutenFree:
+          type: boolean
+          description: Indicates for gluten-free recpie.
+          example: false
+        intolerances:   #ADDED IDAN
+         type: array
+         items:
+          type: string
+          enum:
+            - Dairy
+            - Egg
+            - Gluten
+            - Grain
+            - Peanut
+            - Seafood
+            - Sesame
+            - Shellfish
+            - Soy
+            - Sulfite
+            - Tree Nut
+            - Wheat
+          description: List of intolerances for which the recipe may be problematic
+          example: [Gluten, Dairy]
+        isWatched:
+          type: boolean
+          description: True if the registerd user has entered the URL.
+          example: false
+        isFavorite:
+          type: boolean
+          description: True if added to favorite list.
+          example: false
+        recipeOwner:
+          type: string
+          description: who owns the recipe
+          example: Tigal's grandma
+        Occasion:
+          type: string
+          description: when we make it
+          example: Saturady 
+
+    FullFamilyRecipe:
+      type: object
+      description: recipe basic preview details
+      properties:
+        id:
+          type: integer
+          description: Recipe ID in Spoonacular.
+          example: 111111
+        image:
+          type: string
+          format: uri
+          description: URL of the the meal or the family family member with it
+          example: https://assets.bonappetit.com/photos/5b9a901947aaaf7cd9ea90f4/master/w_1600,c_limit/ba-recipe-pasta-al-limone-1.jpg
+        title:
+          type: string
+          description: Name of the recipe.
+          example: KFC and Watermelon
+        Time:
+          type: integer
+          description: Time it takes to make the recipe (Minutes)
+          example: 420
+        popularity:
+          type: integer
+          description: Number of likes.
+          example: 42
+        vegan:
+          type: boolean
+          description: Indicates for Vegen recpie.
+          example: false
+        vegetarian:
+          type: boolean
+          description: Indicates for vegetarian recpie.
+          example: false
+        glutenFree:
+          type: boolean
+          description: Indicates for gluten-free recpie.
+          example: false
+        isWatched:
+          type: boolean
+          description: True if the registerd user has entered the URL.
+          example: false
+        isFavorite:
+          type: boolean
+          description: True if added to favorite list.
+          example: false
+        recipeOwner:
+          type: string
+          description: who owns the recipe
+          example: Tigal's grandma
+        Occasion:
+          type: string
+          description: when we make it
+          example: Saturady 
+        ingredients:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: ingredient name.
+                example: watermelon
+              amount:
+                type: number
+                description: ingredient quantity.
+                example: 5
+          description: List of ingredients and their quantities.
+        intolerances:   #ADDED IDAN
+         type: array
+         items:
+          type: string
+          enum:
+            - Dairy
+            - Egg
+            - Gluten
+            - Grain
+            - Peanut
+            - Seafood
+            - Sesame
+            - Shellfish
+            - Soy
+            - Sulfite
+            - Tree Nut
+            - Wheat
+          description: List of intolerances for which the recipe may be problematic
+          example: [Gluten, Dairy]
+        instructions:
+          type: string
+          description:  instructions on how to make the meal
+          example: Deep fry the watermelon
+        servings:
+          type: integer
+          description: Number of servings.
+          example: 1
+        
+
+    PrivateRecipe:
+      type: object
+      description: user's recipe preview details
+      properties:
+        id:
+          type: integer
+          description: Recipe unique ID.
+          example: 1
+        image:
+          type: string
+          format: uri
+          description: URL of the recipe's image.
+          example: Scarmbled_eggz.jpg
+        title:
+          type: string
+          description: Name of the recipe.
+          example: scrambpled eggs
+        Time:
+          type: integer
+          description: time to prep the meal (Minutes).
+          example: 10
+        vegan:
+          type: boolean
+          description: Indicates for vegen meal.
+          example: true
+        vegetarian:
+          type: boolean
+          description: Indicates for vegetarian meal.
+          example: true
+        glutenFree:
+          type: boolean
+          description: Indicates for gluten-free meal.
+          example: true
+        intolerances:   #ADDED IDAN
+         type: array
+         items:
+          type: string
+          enum:
+            - Dairy
+            - Egg
+            - Gluten
+            - Grain
+            - Peanut
+            - Seafood
+            - Sesame
+            - Shellfish
+            - Soy
+            - Sulfite
+            - Tree Nut
+            - Wheat
+          description: List of intolerances for which the recipe may be problematic
+          example: [Gluten, Dairy]
+
+    FullPrivateRecipe:
+      type: object
+      description: full user's recipe details
+      properties:
+        id:
+          type: integer
+          description: Recipe unique ID.
+          example: 1
+        image:
+          type: string
+          format: uri
+          description: URL of the recipe's image.
+          example: scrambled eggz.jpg
+        title:
+          type: string
+          description: Name of the recipe.
+          example: scrambled eggs
+        Time:
+          type: integer
+          description: Recepie prep time (Minutes).
+          example: 10
+        vegan:
+          type: boolean
+          description: Indicates for vegen Recpie.
+          example: true
+        vegetarian:
+          type: boolean
+          description: Indicates forvegetarian recpie.
+          example: False
+        glutenFree:
+          type: boolean
+          description: Indicates for gluten-free recipe.
+          example: true
+        intolerances:   #ADDED IDAN
+         type: array
+         items:
+          type: string
+          enum:
+            - Dairy
+            - Egg
+            - Gluten
+            - Grain
+            - Peanut
+            - Seafood
+            - Sesame
+            - Shellfish
+            - Soy
+            - Sulfite
+            - Tree Nut
+            - Wheat
+          description: List of intolerances for which the recipe may be problematic
+          example: [Gluten, Dairy]
+        ingredients:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Ingredient's name.
+                example: eggs
+              amount:
+                type: string
+                description: Ingridient queantity.
+                example: 2
+          description: List of ingredients and their quantities.
+        instructions:
+          type: string
+          description: Meal's instructions
+          example: Beat the eggs in a bowl
+        servings:
+          type: integer
+          description: Number of servings.
+          example: 1
+
+    AddFullPrivateRecipe:
+      required:
+        - image
+        - title
+        - Time
+        - vegan
+        - vegetarian
+        - glutenFree
+        - ingredients
+        - intolerances  #ADDED IDAN
+        - instructions
+        - servings
+  
+      type: object
+      description:  user's recipe details for adding a new recipe
+      properties:
+        image:
+          type: string
+          format: uri
+          description: URL of the recipe's image.
+          example: Fried_Watermelon.jpg
+        title:
+          type: string
+          description: Name of the recipe.
+          example: Texas style watermelon
+        Time:
+          type: integer
+          description: Time to prep the meal (Minutes).
+          example: 42
+        vegan:
+          type: boolean
+          description: Indicates for vegen recpie.
+          example: true
+        vegetarian:
+          type: boolean
+          description: Indicates for vegetarian recipe.
+          example: true
+        glutenFree:
+          type: boolean
+          description: Indicates for gluten-free rcepie .
+          example: true
+        intolerances:   #ADDED IDAN
+         type: array
+         items:
+          type: string
+          enum:
+            - Dairy
+            - Egg
+            - Gluten
+            - Grain
+            - Peanut
+            - Seafood
+            - Sesame
+            - Shellfish
+            - Soy
+            - Sulfite
+            - Tree Nut
+            - Wheat
+          description: List of intolerances for which the recipe may be problematic
+          example: [Gluten, Dairy]
+        ingredients:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Name of the ingredient.
+                example: Sunflower oil
+              amount:
+                type: string
+                description: Quantity of the ingredient.
+                example: 4 Liters
+
+          description: List of ingredients and their quantities.
+        instructions:
+          type: string
+          description: instructions for meal prep.
+          example: put the sunflower oil in a large Pot and boil it to 200 celcios.
+        servings:
+          type: integer
+          description: Number of servings.
+          example: 2
+          
+    FamilyRecipeInput:
+      type: object
+      required:
+        - id
+        - title
+        - image
+        - readyInMinutes
+        - aggregateLikes
+        - vegan
+        - vegetarian
+        - glutenFree
+        - recipeOwner
+        - occasion
+      properties:
+        id:
+          type: string
+          description: Unique ID for the family recipe (e.g., "FAM-grandma-cake")
+        title:
+          type: string
+          example: Grandma's Honey Cake
+        image:
+          type: string
+          format: uri
+          example: https://example.com/images/cake.jpg
+        readyInMinutes:
+          type: integer
+          example: 60
+        aggregateLikes:
+          type: integer
+          example: 50
+        vegan:
+          type: boolean
+        vegetarian:
+          type: boolean
+        glutenFree:
+          type: boolean
+        recipeOwner:
+          type: string
+          example: Grandma Rachel
+        occasion:
+          type: string
+          example: Friday Dinner
+        intolerances:
+          type: array
+          items:
+            type: string
+            enum:
+              - gluten
+              - dairy
+              - wheat
+              - soy
+              - peanut
+              - shellfish
+              - egg
+              - grain
+          example: ["gluten", "egg"]
